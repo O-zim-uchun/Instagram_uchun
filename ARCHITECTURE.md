@@ -1,122 +1,630 @@
-# Architecture
+# ARCHITECTURE.md
 
-This document defines the intended architecture for Instagram_uchun. The project currently contains documentation and folder structure only; implementation details will be added when development begins.
+# System Architecture
 
-## Architectural Principles
+## Overview
 
-- Clean architecture boundaries.
-- Single responsibility per module.
-- Modular and testable design.
-- Configuration through environment variables only.
-- User-facing Telegram UI text loaded from locale files only.
-- Admin-only access by default.
-- Observable behavior through structured logging.
-- Safe handling and cleanup of temporary resources.
+Instagram Reels Finder AI modulli (Modular Architecture) tamoyili asosida quriladi.
 
-## High-Level Layers
+Har bir modul faqat bitta vazifani bajaradi.
 
-### Core Layer
+Modullar o'zaro faqat aniq belgilangan interfeyslar orqali muloqot qiladi.
 
-The `core/` package is reserved for application-wide primitives such as dependency wiring, shared interfaces, lifecycle contracts, and cross-module abstractions. It must not contain business workflows or Telegram handler logic.
+Bu arxitektura kelajakda yangi AI algoritmlari yoki texnologiyalarni qo'shishni osonlashtiradi.
 
-### Bot Layer
+---
 
-The `bot/` package is reserved for Telegram application startup, router registration, lifecycle management, and integration of handlers, middlewares, states, keyboards, and services.
+# High-Level Flow
 
-### Handler Layer
+```text
+Telegram Video
+        │
+        ▼
+Download Manager
+        │
+        ▼
+Video Validator
+        │
+        ▼
+Analysis Pipeline
+        │
+ ┌──────┼───────────────┐
+ ▼      ▼               ▼
+Scene   Audio        Frames
+Detect  Extract      Extract
+ │        │              │
+ ▼        ▼              ▼
+Motion  Whisper     OpenCV
+ │        │              │
+ └──────┬───────────────┘
+        ▼
+Feature Collector
+        ▼
+Viral Scoring Engine
+        ▼
+Ranking Engine
+        ▼
+Preview Generator
+        ▼
+Scene Selector
+        ▼
+Video Cutter
+        ▼
+Telegram Sender
+```
 
-The `handlers/` package will receive Telegram updates, validate user intent, call the appropriate service or analysis module, and return Uzbek-language responses through locale keys and Telegram messages or inline keyboards.
+---
 
-### Service Layer
+# Folder Structure
 
-The `services/` package contains operational services and external integrations. Services should be independent from Telegram-specific update objects whenever possible.
+```text
+project/
 
-### Analysis Layer
+bot/
+    handlers/
+    callbacks/
+    middlewares/
+    filters/
+    keyboards/
 
-The `analysis/` package contains feature-specific AI analysis domains. Each submodule owns one analysis responsibility and must not mix unrelated concerns.
+core/
+    analyzer/
+    scorer/
+    detector/
+    preview/
+    cutter/
+    whisper/
+    ffmpeg/
+    opencv/
 
-### Presentation Support Layer
+services/
+    telegram/
+    download/
+    progress/
+    cleanup/
 
-The `keyboards/`, `locales/`, and `assets/` folders support the user-facing experience. User-facing strings must live in locale files, reusable inline keyboards must be centralized, and static design/runtime assets must be separated from Python code.
+utils/
+    logger/
+    config/
+    validators/
+    helpers/
 
-## Folder Purposes
+temp/
 
-| Folder | Purpose |
-| --- | --- |
-| `.github/` | GitHub project metadata and automation-related files. |
-| `.github/ISSUE_TEMPLATE/` | Future issue templates for structured reports and feature requests. |
-| `core/` | Application-wide contracts, dependency wiring, shared abstractions, and lifecycle primitives. |
-| `bot/` | Telegram bot application setup and lifecycle modules. |
-| `handlers/` | Telegram update handlers grouped by feature or responsibility. |
-| `services/` | Operational service packages and external integrations. |
-| `analysis/` | AI analysis domain packages. |
-| `keyboards/` | Reusable inline keyboard definitions. |
-| `middlewares/` | Cross-cutting request/update processing. |
-| `states/` | Conversation state definitions. |
-| `utils/` | Small reusable helper utilities. |
-| `config/` | Environment configuration loading and validation. |
-| `models/` | Shared data models and schemas. |
-| `assets/` | Static assets used by documentation, design, or future runtime workflows. |
-| `locales/` | Localized user-facing UI text; Uzbek text belongs in `locales/uz.yaml`. |
-| `logs/` | Local runtime logs; log files are ignored by Git. |
-| `temp/` | Temporary runtime files; contents must be deleted after use and ignored by Git. |
-| `tests/` | Automated tests. |
-| `docs/` | Additional project documentation grouped by topic. |
+logs/
 
-## Analysis Domains
+main.py
+```
 
-| Folder | Responsibility |
-| --- | --- |
-| `analysis/scene_detector/` | Future scene detection analysis. |
-| `analysis/dialog_detector/` | Future dialog and speech/dialogue detection analysis. |
-| `analysis/action_detector/` | Future action and activity detection analysis. |
-| `analysis/emotion_detector/` | Future emotion detection analysis. |
-| `analysis/viral_score/` | Future viral scoring and ranking analysis. |
-| `analysis/timeline/` | Future timeline segmentation and event mapping. |
-| `analysis/preview/` | Future preview generation analysis and recommendations. |
+---
 
-## Service Domains
+# Layer Responsibilities
 
-| Folder | Responsibility |
-| --- | --- |
-| `services/telegram/` | Telegram API interaction helpers and delivery services. |
-| `services/ffmpeg/` | Future media processing integration boundary for FFmpeg operations. |
-| `services/progress/` | Progress reporting, edited-message updates, and cancellation coordination. |
-| `services/cleanup/` | Temporary file cleanup and resource disposal workflows. |
-| `services/storage/` | Future storage abstraction for local or remote persistence. |
+## Bot Layer
 
-## Documentation Domains
+Faqat Telegram bilan ishlaydi.
 
-| Folder | Responsibility |
-| --- | --- |
-| `docs/architecture/` | Architecture decisions and deeper technical design notes. |
-| `docs/development/` | Development setup, coding workflow, and contributor guidance. |
-| `docs/design/` | Product, UX, and interaction design notes. |
-| `docs/workflow/` | Operational workflows and process documentation. |
+Vazifalari:
 
-## Localization and UI Text Flow
+* handler
+* callback
+* message
+* keyboard
+* progress
+* edit_message
 
-1. User-facing text is defined as Uzbek locale keys in `locales/uz.yaml`.
-2. Python code references locale keys and must not hardcode user-facing strings.
-3. Handlers or presentation services resolve locale keys before sending Telegram messages.
-4. Inline keyboards should use localized labels from the same locale source.
-5. Tests should verify that new user-facing flows do not introduce hardcoded UI text.
+Bu qatlam AI haqida hech narsa bilmaydi.
 
-## Telegram Bot Data Flow
+---
 
-1. Telegram sends an update to the bot application.
-2. Middlewares validate cross-cutting requirements such as admin access and logging context.
-3. A handler receives the validated update and determines the user intent.
-4. The handler resolves any required Uzbek UI text from `locales/uz.yaml`.
-5. The handler delegates business work to services or analysis modules.
-6. Long-running tasks use the progress service to edit progress messages instead of sending repeated new messages.
-7. The task supports cancellation and reports meaningful progress until completion or failure.
-8. Cleanup services delete temporary files created during processing.
-9. Results or detailed errors are returned to the administrator in Uzbek.
-10. Operational events and errors are written to logs.
+## Service Layer
 
-## Telegram Bot Architecture
+Jarayonlarni boshqaradi.
 
-The Telegram bot should be organized around routers or equivalent handler groups. Handlers must remain thin and delegate complex work to service and analysis modules. Middlewares must protect the bot before handlers execute. Keyboards should be reusable and centralized to keep UI behavior consistent.
+Masalan:
 
-The bot must never stay silent during long operations. Any workflow that takes noticeable time must provide progress feedback by editing an existing message and must expose a cancellation path.
+Download
+
+Progress
+
+Cleanup
+
+Temp
+
+Logger
+
+Bu qatlam Telegram va AI orasidagi ko'prik hisoblanadi.
+
+---
+
+## Core Layer
+
+Loyihaning yuragi.
+
+Bu yerda:
+
+AI
+
+Whisper
+
+FFmpeg
+
+OpenCV
+
+Scene Detection
+
+Viral Score
+
+joylashadi.
+
+---
+
+## Utils
+
+Yordamchi funksiyalar.
+
+Masalan:
+
+format_time()
+
+bytes_to_mb()
+
+safe_delete()
+
+generate_filename()
+
+---
+
+# Pipeline
+
+Pipeline qat'iy ketma-ketlikda ishlaydi.
+
+Download
+
+↓
+
+Validate
+
+↓
+
+Extract Metadata
+
+↓
+
+Scene Detection
+
+↓
+
+Frame Analysis
+
+↓
+
+Audio Extraction
+
+↓
+
+Whisper
+
+↓
+
+Feature Collection
+
+↓
+
+Scoring
+
+↓
+
+Ranking
+
+↓
+
+Preview
+
+↓
+
+Selection
+
+↓
+
+Cut
+
+↓
+
+Cleanup
+
+---
+
+# Download Manager
+
+Vazifasi:
+
+Telegram videoni yuklash.
+
+Tekshiradi:
+
+format
+
+hajm
+
+davomiylik
+
+buzilgan emasligini
+
+---
+
+# Scene Detection Module
+
+Video segmentlarga bo'linadi.
+
+Har bir segment:
+
+boshlanish
+
+tugash
+
+davomiylik
+
+ID
+
+oladi.
+
+Bu hali AI emas.
+
+Faqat segmentatsiya.
+
+---
+
+# Frame Analyzer
+
+OpenCV ishlatadi.
+
+Har segment uchun:
+
+asosiy frame
+
+rang
+
+harakat
+
+kamera almashishi
+
+yorqinlik
+
+kontrast
+
+aniqlanadi.
+
+---
+
+# Audio Analyzer
+
+Audio alohida ajratiladi.
+
+Baholanadi:
+
+ovoz balandligi
+
+pauzalar
+
+keskin o'zgarishlar
+
+musiqa
+
+shovqin
+
+---
+
+# Whisper Module
+
+Audio matnga aylantiriladi.
+
+Natija:
+
+Timestamp
+
+↓
+
+Text
+
+↓
+
+Language
+
+↓
+
+Confidence
+
+---
+
+# Feature Collector
+
+Barcha modullardan kelgan natijalarni bitta obyektga yig'adi.
+
+Misol:
+
+SceneFeatures
+
+Visual
+
+Motion
+
+Dialogue
+
+Emotion
+
+Hook
+
+Curiosity
+
+Replay
+
+Duration
+
+---
+
+# Viral Scoring Engine
+
+Faqat bitta vazifa:
+
+Feature
+
+↓
+
+Viral Score
+
+↓
+
+Reason
+
+↓
+
+Confidence
+
+---
+
+# Ranking Engine
+
+Natijalarni saralaydi.
+
+Masalan:
+
+TOP 5
+
+TOP 10
+
+TOP 20
+
+---
+
+# Preview Generator
+
+Original videodan:
+
+past sifatli
+
+tez render
+
+preview yaratadi.
+
+Preview faqat tanlash uchun.
+
+---
+
+# Cutter
+
+Administrator tanlagandan keyin ishlaydi.
+
+Original video:
+
+copy mode
+
+orqali kesiladi.
+
+Maksimal sifat saqlanadi.
+
+---
+
+# Buffer Manager
+
+Kesishdan oldin:
+
+Start
+
+↓
+
+-3 sec
+
+End
+
+↓
+
++3 sec
+
+Agar video chegarasidan chiqsa,
+
+avtomatik to'g'rilanadi.
+
+---
+
+# Cleanup Manager
+
+Jarayon tugagach:
+
+preview
+
+frame
+
+wav
+
+cache
+
+temp
+
+o'chiriladi.
+
+---
+
+# Progress Manager
+
+Progress faqat bitta message orqali boshqariladi.
+
+Har safar:
+
+edit_message_text()
+
+ishlatiladi.
+
+Yangi xabar yuborilmaydi.
+
+---
+
+# Cancel Manager
+
+Har uzun jarayon:
+
+Cancellation Token
+
+tekshiradi.
+
+Administrator:
+
+Bekor qilish
+
+bossa,
+
+jarayon xavfsiz to'xtatiladi.
+
+---
+
+# Error Flow
+
+Har modul:
+
+Exception
+
+ushlamaydi.
+
+Xatolik yuqoriga uzatiladi.
+
+Faqat Error Handler foydalanuvchiga xabar beradi.
+
+Bu barcha xatoliklarni yagona usulda boshqarishni ta'minlaydi.
+
+---
+
+# Logging
+
+Har modul:
+
+INFO
+
+DEBUG
+
+WARNING
+
+ERROR
+
+yozadi.
+
+Loglar:
+
+logs/
+
+papkasida saqlanadi.
+
+---
+
+# Configuration
+
+Barcha sozlamalar:
+
+config.py
+
+orqali boshqariladi.
+
+Masalan:
+
+ADMIN_ID
+
+TEMP_PATH
+
+BUFFER_SECONDS
+
+PREVIEW_LENGTH
+
+MAX_VIDEO_SIZE
+
+MAX_RESULTS
+
+WHISPER_MODEL
+
+LOG_LEVEL
+
+---
+
+# Dependency Direction
+
+Qoidalar:
+
+Bot
+
+↓
+
+Services
+
+↓
+
+Core
+
+↓
+
+Utils
+
+Hech qachon teskari bog'lanish bo'lmaydi.
+
+Masalan:
+
+Core Telegram haqida bilmaydi.
+
+Bot Whisper haqida bilmaydi.
+
+---
+
+# Scalability
+
+Kelajakda quyidagilarni qo'shish mumkin:
+
+GPU
+
+OpenAI
+
+YOLO
+
+Face Recognition
+
+LLM Analysis
+
+Subtitle AI
+
+Instagram Analytics
+
+Arxitektura qayta yozilmaydi.
+
+Faqat yangi modul ulanadi.
+
+---
+
+# Final Architecture Rule
+
+Har bir modul almashtirilishi mumkin bo'lishi kerak.
+
+Masalan:
+
+Bugun Whisper.
+
+Ertaga boshqa Speech-to-Text.
+
+Kodning qolgan qismi o'zgarmasligi kerak.
+
+Bu Modular Architecture ning asosiy maqsadidir.
