@@ -1,0 +1,3 @@
+# Future Uzbek user-facing Telegram UI text belongs in this file.
+# Python code must reference locale keys instead of hardcoded user-facing strings.
+ui: {}
