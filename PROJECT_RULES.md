@@ -1,63 +1,497 @@
+# PROJECT_RULES.md
+
 # Project Rules
 
-These rules are mandatory for all future development in Instagram_uchun.
+## Purpose
 
-## Architecture and Design
+Ushbu hujjat loyiha davomida barcha kod, modul va qarorlar uchun majburiy qoidalarni belgilaydi.
 
-- Use clean architecture principles.
-- Keep the design modular and easy to test.
-- Every module must have a single responsibility.
-- Keep handlers thin; move business logic into services or analysis modules.
-- Keep `core/` limited to shared contracts, dependency wiring, lifecycle primitives, and cross-module abstractions.
-- Keep analysis responsibilities separated by domain: scene detection, dialog detection, action detection, emotion detection, viral scoring, timeline, and preview.
-- Keep service responsibilities separated by domain: Telegram, FFmpeg, progress, cleanup, and storage.
-- Avoid placeholder code and unused abstractions.
-- Do not install unnecessary libraries.
-- Do not write business logic until the feature requirements are defined.
+Har qanday yangi kod ushbu qoidalarga mos bo'lishi shart.
 
-## Language, Localization, and User Interface
+Agar kod ushbu qoidalarga zid bo'lsa, u noto'g'ri hisoblanadi.
 
-- User-facing bot UI text must be in Uzbek only.
-- All future user-facing UI text must live in `locales/uz.yaml`.
-- Python code must reference locale keys instead of hardcoded user-facing strings.
-- No hardcoded user-facing strings are allowed in Python code.
-- Use inline keyboards whenever possible.
-- Inline keyboard labels must come from the localization layer.
-- Progress messages must always be edited instead of sending repeated new messages.
-- Bot responses must be clear, actionable, and suitable for an admin user.
+---
 
-## Long Operations
+# Rule 1 — Product First
 
-- The bot must never stay silent during long operations.
-- Every long task must support cancellation.
-- Long tasks must report progress through edited messages.
-- Temporary files must always be deleted after use.
-- Failures must include detailed error reporting for troubleshooting.
+Kod mahsulot maqsadiga xizmat qilishi kerak.
 
-## Security and Access
+Mahsulot maqsadi:
 
-- Bot access must be admin-only.
-- Do not expose internal details to unauthorized users.
-- Do not hardcode secrets, IDs, tokens, URLs, or runtime configuration values.
-- Configuration must be provided only through `.env` values.
+Film ichidan Instagram Reels uchun Telegram kanaliga eng ko'p obunachi olib kelish ehtimoli yuqori bo'lgan sahnalarni topish.
 
-## Code Quality
+Har bir modul o'zidan:
 
-- Type hints are required for Python code.
-- Docstrings are required for modules, classes, and public functions.
-- Logging is required for important operations and errors.
-- No hardcoded values are allowed.
-- Keep functions and modules focused on one responsibility.
-- Prefer explicit names over vague abbreviations.
+"Men ushbu maqsadga xizmat qilyapmanmi?"
 
-## Configuration
+deb so'rashi kerak.
 
-- Use `.env` for all runtime configuration.
-- Keep `.env.example` updated whenever configuration keys are added.
-- Never commit real `.env` files or secrets.
+---
 
-## Logging and Errors
+# Rule 2 — Modular Design
 
-- Log important lifecycle events, long-running task progress, cleanup actions, and exceptions.
-- Error reports should include enough context to debug the issue.
-- Do not silently ignore exceptions.
+Har bir modul bitta vazifa bajaradi.
+
+Masalan:
+
+Video yuklash.
+
+Whisper.
+
+OpenCV.
+
+Scoring.
+
+Preview.
+
+Cutting.
+
+Bir modul ichida bir nechta mustaqil logika aralashtirilmaydi.
+
+---
+
+# Rule 3 — Low Coupling
+
+Modullar bir-biriga kuchli bog'lanmasligi kerak.
+
+Bir modulni almashtirish boshqalarga ta'sir qilmasligi kerak.
+
+---
+
+# Rule 4 — High Cohesion
+
+Bir fayl ichidagi barcha funksiyalar bitta mavzuga tegishli bo'lishi kerak.
+
+Masalan:
+
+preview.py
+
+ichida
+
+download()
+
+bo'lmaydi.
+
+---
+
+# Rule 5 — Clean Code
+
+Kod:
+
+o'qilishi oson
+
+nomlari tushunarli
+
+izchil
+
+minimal
+
+bo'lishi kerak.
+
+Qisqa nomlar taqiqlanadi.
+
+Misol:
+
+x
+
+tmp1
+
+abc
+
+func2
+
+ishlatilmaydi.
+
+---
+
+# Rule 6 — Type Hints
+
+Barcha public funksiyalar:
+
+type hints
+
+ga ega bo'lishi shart.
+
+Misol:
+
+```python
+def analyze(video_path: Path) -> AnalysisResult:
+    ...
+```
+
+---
+
+# Rule 7 — Docstrings
+
+Murakkab funksiyalar uchun:
+
+docstring yoziladi.
+
+Funksiya:
+
+nima qiladi
+
+parametr
+
+natija
+
+istisnolar
+
+tushuntiriladi.
+
+---
+
+# Rule 8 — Logging
+
+print()
+
+ishlatilmaydi.
+
+Faqat logger.
+
+Darajalar:
+
+DEBUG
+
+INFO
+
+WARNING
+
+ERROR
+
+---
+
+# Rule 9 — Error Handling
+
+Har Exception yutilmaydi.
+
+Hech qachon:
+
+except:
+pass
+
+yozilmaydi.
+
+Xatolik:
+
+log qilinadi
+
+va yuqoriga uzatiladi.
+
+---
+
+# Rule 10 — Configuration
+
+Hardcode qiymatlar taqiqlanadi.
+
+Masalan:
+
+ADMIN_ID
+
+BUFFER
+
+TEMP
+
+MAX_SIZE
+
+config.py orqali olinadi.
+
+---
+
+# Rule 11 — Temporary Files
+
+Har yaratilgan temp fayl:
+
+finally
+
+blokida yoki
+
+Cleanup Manager
+
+orqali o'chiriladi.
+
+---
+
+# Rule 12 — Async First
+
+Telegram bilan ishlash:
+
+async
+
+bo'lishi shart.
+
+Bloklovchi operatsiyalar event loopni to'xtatmasligi kerak.
+
+---
+
+# Rule 13 — Progress
+
+Har uzun jarayon:
+
+Progress Manager
+
+orqali ishlaydi.
+
+Yangi message yuborilmaydi.
+
+Faqat edit qilinadi.
+
+---
+
+# Rule 14 — Cancel Support
+
+30 soniyadan uzun har bir jarayon:
+
+Bekor qilish
+
+imkoniyatiga ega bo'lishi shart.
+
+---
+
+# Rule 15 — Uzbek Interface
+
+Foydalanuvchiga ko'rinadigan barcha matn:
+
+100% o'zbek tilida.
+
+Kod ichidagi nomlar:
+
+ingliz tilida.
+
+---
+
+# Rule 16 — Original Video
+
+Original video:
+
+hech qachon
+
+o'zgartirilmaydi.
+
+---
+
+# Rule 17 — Non-Destructive Processing
+
+Har qanday ishlov:
+
+copy
+
+temp
+
+buffer
+
+orqali bajariladi.
+
+---
+
+# Rule 18 — Explainability
+
+AI har doim sababini yozadi.
+
+Faqat ball chiqarmaydi.
+
+---
+
+# Rule 19 — Deterministic Logic
+
+Bir xil video
+
+bir xil konfiguratsiya
+
+↓
+
+bir xil natija.
+
+Tasodifiy qarorlar bo'lmaydi.
+
+---
+
+# Rule 20 — Security
+
+Faqat administrator.
+
+Video tashqi serverga yuborilmaydi.
+
+API orqali uchinchi tomonga uzatilmaydi.
+
+---
+
+# Rule 21 — Dependency Control
+
+Keraksiz kutubxona qo'shilmaydi.
+
+Har dependency:
+
+asoslangan
+
+zarur
+
+bo'lishi kerak.
+
+---
+
+# Rule 22 — Performance
+
+Keraksiz:
+
+copy
+
+RAM
+
+CPU
+
+ishlatilmaydi.
+
+Har modul samarali ishlashi kerak.
+
+---
+
+# Rule 23 — Reusable Components
+
+Kod qayta ishlatiladigan bo'lishi kerak.
+
+Copy-paste taqiqlanadi.
+
+---
+
+# Rule 24 — Single Source of Truth
+
+Bir xil ma'lumot bir nechta joyda saqlanmaydi.
+
+Masalan:
+
+BUFFER_SECONDS
+
+faqat bitta joyda mavjud bo'ladi.
+
+---
+
+# Rule 25 — Testability
+
+Har modul alohida test qilinishi mumkin bo'lishi kerak.
+
+Telegramsiz ham.
+
+---
+
+# Rule 26 — AI Independence
+
+AI moduli Telegram haqida bilmaydi.
+
+Telegram moduli AI haqida bilmaydi.
+
+---
+
+# Rule 27 — Resource Safety
+
+Har ochilgan resurs:
+
+file
+
+stream
+
+ffmpeg
+
+subprocess
+
+yopilishi shart.
+
+---
+
+# Rule 28 — Naming Convention
+
+Fayllar:
+
+snake_case
+
+Sinflar:
+
+PascalCase
+
+Funksiyalar:
+
+snake_case
+
+Konstantalar:
+
+UPPER_CASE
+
+---
+
+# Rule 29 — Git Discipline
+
+Har commit:
+
+bitta mantiqiy o'zgarish.
+
+Bir commitda 20 xil vazifa bajarilmaydi.
+
+---
+
+# Rule 30 — Documentation
+
+Har yangi modul:
+
+README
+
+yoki
+
+docstring
+
+bilan tushuntiriladi.
+
+---
+
+# Rule 31 — No Dead Code
+
+Foydalanilmaydigan:
+
+funksiya
+
+klass
+
+import
+
+kommentlangan kod
+
+loyihada qolmaydi.
+
+---
+
+# Rule 32 — Fail Fast
+
+Noto'g'ri parametr aniqlansa:
+
+jarayon imkon qadar erta to'xtatiladi.
+
+---
+
+# Rule 33 — Preview Is Temporary
+
+Preview faqat tanlash uchun.
+
+Original natija emas.
+
+---
+
+# Rule 34 — Buffer Rule
+
+Har kesishda:
+
+3 soniya oldin
+
+*
+
+3 soniya keyin.
+
+Buffer konfiguratsiyadan boshqariladi.
+
+---
+
+# Rule 35 — Final Goal
+
+Loyiha video kesuvchi dastur emas.
+
+Loyiha AI yordamida Instagram uchun eng kuchli sahnalarni topuvchi tizimdir.
+
+Kod yozishda ushbu qoida barcha boshqa qarorlardan ustun turadi.
